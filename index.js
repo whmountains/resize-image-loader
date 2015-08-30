@@ -13,15 +13,15 @@ function createPlaceholder(content, placeholder, ext, blur, callback){
     .resize(placeholder)
     .size(function(err, _size){ size = _size; })
     .toBuffer(ext, function(err, buf){
-      if (!buf) return; 
+      if (!buf) return;
 
       var uri = new Datauri().format('.'+ext, buf).content;
-      var blur =  "<svg xmlns='http://www.w3.org/2000/svg' width='100%' viewBox='0 0 " + size.width + " " + size.height + "'>" + 
+      var blur =  "<svg xmlns='http://www.w3.org/2000/svg' width='100%' viewBox='0 0 " + size.width + " " + size.height + "'>" +
                     "<defs><filter id='puppybits'><feGaussianBlur in='SourceGraphic' stdDeviation='" + defaultBlur + "'/></filter></defs>" +
                     "<image width='100%' height='100%' xmlns:xlink='http://www.w3.org/1999/xlink' xlink:href='" + uri + "' filter='url(#puppybits)'></image>" +
                   "</svg>";
-      var micro = new Datauri().format('.svg', new Buffer(blur, 'utf8')).content; 
-      callback(null, "module.exports = \""+micro+"\"");  
+      var micro = new Datauri().format('.svg', new Buffer(blur, 'utf8')).content;
+      callback(null, "module.exports = \""+micro+"\"");
   });
 }
 
@@ -35,14 +35,15 @@ function createResponsiveImages(content, sizes, ext, files, emitFile, callback){
       .resize(size)
       .toBuffer(ext, function(err, buf){
         if (buf){
+          // console.log('output: ', files[i]);
           images[i] = buf;
           emitFile(files[i], buf);
         }
-        
+
         count++;
         if (count >= files.length) {
-          callback(null, "module.exports = \""+imgset+"\"");  
-        }    
+          callback(null, "module.exports = \""+imgset+"\"");
+        }
     });
   });
 }
@@ -56,8 +57,8 @@ module.exports = function(content) {
   var query = (this.query !== '' ? this.query : this.loaders[0].query);
   query = loaderUtils.parseQuery(query);
 
-  query.sizes = (!Array.isArray(query.sizes) && [sizes]) || query.sizes || defaultSizes;
-  
+  query.sizes = (query.sizes && !Array.isArray(query.sizes) && [query.sizes]) || query.sizes || defaultSizes;
+
   var callback = this.async();
   if(!this.emitFile) throw new Error("emitFile is required from module system");
   this.cacheable && this.cacheable();
@@ -67,9 +68,11 @@ module.exports = function(content) {
     // Bypass processing while on watch mode
     return callback(null, content);
   } else {
+
     var paths = this.resourcePath.split('/');
-    var name = paths[paths.length - 1].split('.')[0];
-    var ext = paths[paths.length - 1].split('.')[1];
+    var file = paths[paths.length - 1];
+    var name = file.slice(0,file.lastIndexOf('.'));
+    var ext = file.slice(file.lastIndexOf('.')+1, file.length);
     var sizes = query.sizes.map(function(s){ return s; });
     var files = sizes.map(function(size, i){ return name + '-' + size + '.' + ext; });
 
