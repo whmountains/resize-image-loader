@@ -77,6 +77,8 @@ function createPlaceholder(content, placeholder, ext, blur, callback, files){
           next();
         });
     };
+    
+    getSize();
   };
 }
 
