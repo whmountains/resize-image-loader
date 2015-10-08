@@ -5,7 +5,7 @@
   "author": "Puppybits @puppybits",
   "keywords": "webpack image resize responsive adaptive",
   "scripts": {
-    "test": "webpack --config test/webpack.config.js"
+    "test": "DEBUG=resize-image-loader webpack --config test/webpack.config.js"
   },
   "licenses": [
     {
@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "datauri": "^0.7.1",
+    "debug": "^2.2.0",
     "file-loader": "^0.8.4",
     "loader-utils": "^0.2.6"
   },
