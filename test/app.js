@@ -1,5 +1,6 @@
 
-var src = require('./sf.jpg'), 
+var master = require('../index?sizes[]=100w,sizes[]=600w&placeholder=10&blur=50!./sf.jpg'),
+ src = require('./sf.jpg'),
  srcset = require('../index?sizes[]=200w,sizes[]=400w,sizes[]=900w!./sf.jpg');
  blur = require('../index?placeholder!./sf.jpg');
 

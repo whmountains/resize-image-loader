@@ -10,7 +10,7 @@
 //  @format String ('jpg', 'gif', 'webp', 'png')
 //    require('resize-image?format=webp!./myImage.jpg');
 
-
+var debug = require('debug')('resize-image-loader');
 var gm = require('gm').subClass({ imageMagick: true });
 var Datauri = require('datauri');
 var fs = require('fs');
@@ -28,7 +28,7 @@ var queue = (function(q, c){
     },
     canDo = function(){
       if(c < max && q.length > 0){
-        // console.log(q.length + " images remaining.");
+        debug(q.length + " images remaining.");
         c++;
         q.shift()(next);
       }
@@ -42,21 +42,19 @@ var queue = (function(q, c){
     return {push:push, next:next};
 }([], 0));
 
-function createPlaceholder(content, placeholder, ext, blur, callback, files){
+function createPlaceholder(content, placeholder, ext, blur, files){
   return function(next){
 
     var getSize = function(){
       gm(content)
         .size(function(err, _size){
           if (err) {
-            // console.log('err: ', err);
             return;
           }
           if (!_size) {
             getSize();
             return;
           }
-          // console.log('size: ',_size);
           setPlaceholder(_size);
       });
     };
@@ -66,42 +64,44 @@ function createPlaceholder(content, placeholder, ext, blur, callback, files){
         .resize(placeholder)
         .toBuffer(ext, function(err, buf){
           if (!buf) return;
-          // console.log(files, size);
+          debug("placeholder: " + JSON.stringify(size));
           var uri = new Datauri().format('.'+ext, buf).content;
           var blur =  "<svg xmlns='http://www.w3.org/2000/svg' width='100%' viewBox='0 0 " + size.width + " " + size.height + "'>" +
                         "<defs><filter id='puppybits'><feGaussianBlur in='SourceGraphic' stdDeviation='" + defaultBlur + "'/></filter></defs>" +
                         "<image width='100%' height='100%' xmlns:xlink='http://www.w3.org/1999/xlink' xlink:href='" + uri + "' filter='url(#puppybits)'></image>" +
                       "</svg>";
           var micro = new Datauri().format('.svg', new Buffer(blur, 'utf8')).content;
-          callback(null, "module.exports = \""+micro+"\"");
-          next();
+          var response = {size:size, placeholder:micro};
+          next(response);
         });
     };
-    
+
     getSize();
   };
 }
 
-function createResponsiveImages(content, sizes, ext, files, emitFile, callback){
+function createResponsiveImages(content, sizes, ext, files, emitFile){
   return function(next){
     var count = 0;
     var images = [];
     var imgset = files.map(function(file, i){ return file + ' ' + sizes[i] + ' '; }).join(',');
+
     sizes.map(function(size, i){
       size = parseInt(size);
       gm(content)
         .resize(size)
         .toBuffer(ext, function(err, buf){
           if (buf){
-            // console.log('output: ', files[i]);
+            debug('srcset: ' + imgset);
             images[i] = buf;
             emitFile(files[i], buf);
           }
 
+
           count++;
           if (count >= files.length) {
-            callback(null, "module.exports = \""+imgset+"\"");
-            next();
+            var response = {srcset:imgset};
+            next(response);
           }
       });
     });
@@ -116,8 +116,9 @@ module.exports = function(content) {
 
   var query = (this.query !== '' ? this.query : this.loaders[0].query);
   query = loaderUtils.parseQuery(query);
+  var size = !query.sizes && !query.placeholder && defaultSizes || [];
 
-  query.sizes = (query.sizes && !Array.isArray(query.sizes) && [query.sizes]) || query.sizes || defaultSizes;
+  query.sizes = (query.sizes && !Array.isArray(query.sizes) && [query.sizes]) || query.sizes || size;
 
   var callback = this.async();
   if(!this.emitFile) throw new Error("emitFile is required from module system");
@@ -135,17 +136,49 @@ module.exports = function(content) {
     var ext = file.slice(file.lastIndexOf('.')+1, file.length);
     var sizes = query.sizes.map(function(s){ return s; });
     var files = sizes.map(function(size, i){ return name + '-' + size + '.' + ext; });
+    var emitFile = this.emitFile;
 
+    var task1 = null,
+      task2 = null;
     if (query.placeholder) {
       query.placeholder = parseInt(query.placeholder) || defaultPlaceholderSize;
       query.blur = query.blur || defaultBlur;
 
-      queue.push(createPlaceholder(content, query.placeholder, ext, query.blur, callback, files));
-    } else /* return srcset*/ {
-
-      var emitFile = this.emitFile;
-      queue.push(createResponsiveImages(content, sizes, ext, files, emitFile, callback));
+      task1 = createPlaceholder(content, query.placeholder, ext, query.blur, files);
     }
+
+    if (sizes.length >= 1){
+      if (!task1) {
+        task1 = createResponsiveImages(content, sizes, ext, files, emitFile);
+      } else {
+        task2 = createResponsiveImages(content, sizes, ext, files, emitFile);
+      }
+    }
+
+    queue.push((function(t1, t2, callback){
+      return function(next){
+        if (t2){
+          t2(function(result){
+            t1(function(result2){
+              Object.keys(result2).map(function(key){
+                result[key] = result2[key];
+              });
+              debug(JSON.stringify(result, undefined, 1));
+              callback(null, "module.exports = '"+JSON.stringify(result)+"'");
+              next();
+            });
+          });
+          return;
+        }
+
+
+        t1(function(result){
+          debug(JSON.stringify(result, undefined, 1));
+          callback(null, "module.exports = '"+JSON.stringify(result)+"'");
+          next();
+        });
+      };
+    }(task1, task2, callback)));
   }
 };
 
