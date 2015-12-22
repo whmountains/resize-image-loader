@@ -134,6 +134,7 @@ module.exports = function(content) {
   } else {
     
     //modified to fix a bug on windows, where the file variable is populated with the entire absolute path
+    var parsedPath = path.parse(this.resourcePath);
     var file = parsedPath.base;
     var name = parsedPath.name;
     var ext = parsedPath.ext.slice(1);
