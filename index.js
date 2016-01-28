@@ -16,6 +16,9 @@ var Datauri = require('datauri');
 var fs = require('fs');
 var loaderUtils = require('loader-utils');
 
+//added to support cross-platform compatibility
+var path = require('path');
+
 var defaultSizes = ['320w','960w','2048w'];
 var defaultBlur = 40;
 var defaultPlaceholderSize = 20;
@@ -129,11 +132,14 @@ module.exports = function(content) {
     // Bypass processing while on watch mode
     return callback(null, content);
   } else {
-
-    var paths = this.resourcePath.split('/');
-    var file = paths[paths.length - 1];
-    var name = file.slice(0,file.lastIndexOf('.'));
-    var ext = file.slice(file.lastIndexOf('.')+1, file.length);
+    
+    //modified to fix a bug on windows, where the file variable is populated with the entire absolute path
+    var parsedPath = path.parse(this.resourcePath);
+    var file = parsedPath.base;
+    var name = parsedPath.name;
+    var ext = parsedPath.ext.slice(1);
+    
+    
     var sizes = query.sizes.map(function(s){ return s; });
     var files = sizes.map(function(size, i){ return name + '-' + size + '.' + ext; });
     var emitFile = this.emitFile;
