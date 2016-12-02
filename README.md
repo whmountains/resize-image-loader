@@ -88,10 +88,10 @@ $ brew install ImageMagick // for mac
 $ npm install resize-image-loader --save-dev
 ```
 
+## Contributing
+
+Contributors: We welcome your interest in Capital One’s Open Source Projects (the “Project”). Any Contributor to the project must accept and sign a CLA indicating agreement to the license terms. Except for the license granted in this CLA to Capital One and to recipients of software distributed by Capital One, you reserve all right, title, and interest in and to your contributions; this CLA does not impact your rights to use your own contributions for any other purpose. This project adheres to the Open Source Code of Conduct. By participating, you are expected to honor this code.
 
 ## License
-
-MIT (http://www.opensource.org/licenses/mit-license.php)
-
-[image-stats]: http://royal.pingdom.com/2011/11/21/web-pages-getting-bloated-here-is-why/
-[cost-site]: http://whatdoesmysitecost.com/
+Contributor License Agreement: https://docs.google.com/forms/d/19LpBBjykHPox18vrZvBbZUcK6gQTj7qv1O5hCduAZFU/viewform
+This software is released under the Apache 2.0 (See License File)
